@@ -55,15 +55,15 @@ func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
 
 	for i := 0; i < val.Len(); i++ {
 		row := val.Index(i)
-		if row.Elem().Kind() != reflect.Slice {
+		if row.Kind() != reflect.Slice {
 			return nil, fmt.Errorf(
 				"%w: row %d, %+v is not proper kind, %v",
 				ErrCSVTranslation, i, row.Interface(), row.Kind())
 		}
 
-		elems := make([]string, row.Elem().Len())
-		for j := 0; j < row.Elem().Len(); j++ {
-			x := row.Elem().Index(j)
+		elems := make([]string, row.Len())
+		for j := 0; j < row.Len(); j++ {
+			x := row.Index(j)
 			switch x.Interface().(type) {
 			case bool, int, int8, int16, int32, int64,
 				uint, uint8, uint16, uint32, uint64,
