@@ -34,7 +34,7 @@ func main() {
 }
 
 func Usage() {
-	fmt.Fprintln(os.Stderr, usage)
+	fmt.Fprintf(os.Stderr, "%s\n", usage)
 	flag.PrintDefaults()
 }
 
