@@ -21,6 +21,7 @@ const (
 	Tyaml
 	Ttoml
 	Tcsv
+	Tltsv
 )
 
 func (t Type) String() string {
@@ -33,6 +34,8 @@ func (t Type) String() string {
 		return "toml"
 	case Tcsv:
 		return "csv"
+	case Tltsv:
+		return "ltsv"
 	default:
 		return "unknown"
 	}
@@ -48,6 +51,8 @@ func TypeFromString(s string) Type {
 		return Ttoml
 	case "csv", "c":
 		return Tcsv
+	case "ltsv", "l":
+		return Tltsv
 	default:
 		return Tunknown
 	}
@@ -59,6 +64,7 @@ func ListTypes() []Type {
 		Tyaml,
 		Ttoml,
 		Tcsv,
+		Tltsv,
 	}
 }
 
@@ -77,6 +83,8 @@ func (t Type) Translator(opt ...Option) (Translator, bool) {
 		return NewTOMLTranslator(), true
 	case Tcsv:
 		return NewCSVTranslator(config.Delimiter.Get()), true
+	case Tltsv:
+		return NewLTSVTranslator(':'), true
 	default:
 		return nil, false
 	}
