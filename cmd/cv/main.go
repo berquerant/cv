@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/berquerant/cv"
 )
@@ -22,8 +23,9 @@ func main() {
 	}
 
 	var (
-		src = cv.TypeFromString(args[0])
-		dst = cv.TypeFromString(args[1])
+		types cv.StringTypes
+		src   = types.Get(args[0])
+		dst   = types.Get(args[1])
 	)
 
 	input, err := io.ReadAll(os.Stdin)
@@ -45,7 +47,7 @@ func fail(format string, v ...any) {
 }
 
 func Usage() {
-	fmt.Fprintf(os.Stderr, "%s\n", usage)
+	fmt.Fprintf(os.Stderr, usage, typesUsage())
 	flag.PrintDefaults()
 }
 
@@ -56,6 +58,24 @@ Usage:
 
 Read data from standard input and convert it to the specified format, then write it to standard output.
 
-Valid values for each format are json, yaml, toml, and csv.
+Valid values for INPUT_FORMAT and OUTPUT_FORMAT are:
+
+%s
+
 For csv format, the delimiter can be specified with the -d option. If it is not specified, it will be , (comma).
 `
+
+func typesUsage() string {
+	var (
+		types  cv.StringTypes
+		tuples = types.Tuples()
+		buff   = make([]string, len(tuples))
+	)
+	for i, x := range tuples {
+		buff[i] = fmt.Sprintf("  %s\t%s",
+			strings.Join(x.Keys, ", "),
+			x.Value,
+		)
+	}
+	return strings.Join(buff, "\n")
+}

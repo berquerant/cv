@@ -1,5 +1,7 @@
 package cv
 
+import "slices"
+
 type Unmarshaler interface {
 	Unmarshal(data []byte, v any) error
 }
@@ -41,31 +43,45 @@ func (t Type) String() string {
 	}
 }
 
-func TypeFromString(s string) Type {
-	switch s {
-	case "json", "j":
-		return Tjson
-	case "yaml", "yml", "y":
-		return Tyaml
-	case "toml", "t":
-		return Ttoml
-	case "csv", "c":
-		return Tcsv
-	case "ltsv", "l":
-		return Tltsv
-	default:
-		return Tunknown
+type StringTypeTuple struct {
+	Keys  []string
+	Value Type
+}
+
+type StringTypes struct{}
+
+func (StringTypes) Tuples() []*StringTypeTuple {
+	return []*StringTypeTuple{
+		{
+			Keys:  []string{"json", "j"},
+			Value: Tjson,
+		},
+		{
+			Keys:  []string{"yaml", "yml", "y"},
+			Value: Tyaml,
+		},
+		{
+			Keys:  []string{"toml", "t"},
+			Value: Ttoml,
+		},
+		{
+			Keys:  []string{"csv", "c"},
+			Value: Tcsv,
+		},
+		{
+			Keys:  []string{"ltsv", "l"},
+			Value: Tltsv,
+		},
 	}
 }
 
-func ListTypes() []Type {
-	return []Type{
-		Tjson,
-		Tyaml,
-		Ttoml,
-		Tcsv,
-		Tltsv,
+func (t StringTypes) Get(s string) Type {
+	for _, x := range t.Tuples() {
+		if slices.Contains(x.Keys, s) {
+			return x.Value
+		}
 	}
+	return Tunknown
 }
 
 //go:generate go run github.com/berquerant/goconfig@v0.3.0 -field "Delimiter rune" -option -configOption Option -output interface_config_generated.go

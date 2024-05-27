@@ -75,42 +75,21 @@ func NewAutoTranslator(src, dst Type, delimiter rune) *AutoTranslator {
 	}
 }
 
-func (t *AutoTranslator) Marshal(v any) ([]byte, error) {
-	translator, ok := t.Dst.Translator(WithDelimiter(t.Delimiter))
-	if !ok {
-		translator = NewJSONTranslator()
-	}
+var (
+	ErrUnknownMarshaler   = errors.New("UnknownMarshaler")
+	ErrUnknownUnmarshaler = errors.New("UnknownUnmarshaler")
+)
 
-	return translator.Marshal(v)
+func (t *AutoTranslator) Marshal(v any) ([]byte, error) {
+	if translator, ok := t.Dst.Translator(WithDelimiter(t.Delimiter)); ok {
+		return translator.Marshal(v)
+	}
+	return nil, fmt.Errorf("%w: %s", ErrUnknownMarshaler, t.Dst)
 }
 
 func (t *AutoTranslator) Unmarshal(data []byte, a any) error {
-	var unmarshaler Unmarshaler
 	if translator, ok := t.Src.Translator(WithDelimiter(t.Delimiter)); ok {
-		unmarshaler = translator
-	} else {
-		unmarshaler = NewAutoUnmarshaler(t.Delimiter)
+		return translator.Unmarshal(data, a)
 	}
-
-	return unmarshaler.Unmarshal(data, a)
-}
-
-type AutoUnmarshaler struct {
-	Delimiter rune
-}
-
-func NewAutoUnmarshaler(delimiter rune) *AutoUnmarshaler {
-	return &AutoUnmarshaler{
-		Delimiter: delimiter,
-	}
-}
-
-func (a *AutoUnmarshaler) Unmarshal(data []byte, v any) error {
-	for _, typ := range ListTypes() {
-		translator, _ := typ.Translator(WithDelimiter(a.Delimiter))
-		if err := translator.Unmarshal(data, v); err == nil {
-			return nil
-		}
-	}
-	return ErrNoTranslator
+	return fmt.Errorf("%w: %s", ErrUnknownUnmarshaler, t.Src)
 }
