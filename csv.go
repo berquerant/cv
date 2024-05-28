@@ -54,10 +54,11 @@ func (t *CSVTranslator) marshalTrySliceToNestedSlice(v any) any {
 	if val.Len() == 0 {
 		return v
 	}
-	if val.Index(0).Kind() != reflect.Slice {
-		return []any{v}
+	firstTyp := reflect.TypeOf(val.Index(0).Interface())
+	if firstTyp.Kind() == reflect.Slice {
+		return v
 	}
-	return v
+	return []any{v}
 }
 
 // Marshal [][]any or []any into csv.
@@ -77,18 +78,20 @@ func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
 
 	for i := 0; i < val.Len(); i++ {
 		row := val.Index(i)
-		if row.Kind() != reflect.Slice {
+		rowType := reflect.TypeOf(row.Interface())
+		if rowType.Kind() != reflect.Slice {
 			return nil, fmt.Errorf(
-				"%w: row %d, %+v but need slice, %v %T",
-				ErrCSVTranslation, i, row.Interface(), row.Kind(), row.Interface())
+				"%w: row %d, %+v but need slice, %s, %T",
+				ErrCSVTranslation, i, row.Interface(), rowType.Kind(), row.Interface())
 		}
+		row = reflect.ValueOf(row.Interface())
 
 		elems := make([]string, row.Len())
 		for j := 0; j < row.Len(); j++ {
 			x := row.Index(j)
 			if !IsConvertibleToString(x.Interface()) {
 				return nil, fmt.Errorf(
-					"%w: row %d, col %d, %+v is not proper kind, %v %T",
+					"%w: row %d, col %d, %+v is not proper kind, %s, %T",
 					ErrCSVTranslation, i, j, x, x.Kind(), x.Interface())
 			}
 			elems[j] = fmt.Sprint(x.Interface())
