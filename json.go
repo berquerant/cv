@@ -4,6 +4,10 @@ import "encoding/json"
 
 type JSONTranslator struct{}
 
+var (
+	_ Translator = &JSONTranslator{}
+)
+
 func NewJSONTranslator() *JSONTranslator {
 	return &JSONTranslator{}
 }

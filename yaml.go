@@ -4,6 +4,10 @@ import "gopkg.in/yaml.v3"
 
 type YAMLTranslator struct{}
 
+var (
+	_ Translator = &YAMLTranslator{}
+)
+
 func NewYAMLTranslator() *YAMLTranslator {
 	return &YAMLTranslator{}
 }

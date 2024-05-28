@@ -4,6 +4,10 @@ import "github.com/pelletier/go-toml/v2"
 
 type TOMLTranslator struct{}
 
+var (
+	_ Translator = &TOMLTranslator{}
+)
+
 func NewTOMLTranslator() *TOMLTranslator {
 	return &TOMLTranslator{}
 }
