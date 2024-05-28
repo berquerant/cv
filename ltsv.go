@@ -15,6 +15,10 @@ type LTSVTranslator struct {
 	Delimiter rune
 }
 
+var (
+	_ Translator = &LTSVTranslator{}
+)
+
 func NewLTSVTranslator(delimiter rune) *LTSVTranslator {
 	return &LTSVTranslator{
 		Delimiter: delimiter,
@@ -28,7 +32,7 @@ var (
 func (t *LTSVTranslator) Unmarshal(data []byte, v any) error {
 	result, ok := v.(*[]map[string]string)
 	if !ok {
-		return fmt.Errorf("%w: need *[]map[string]string", ErrLTSVTranslation)
+		return fmt.Errorf("%w: need *[]map[string]string, %T", ErrLTSVTranslation, v)
 	}
 
 	var (
@@ -57,10 +61,20 @@ func (t *LTSVTranslator) Unmarshal(data []byte, v any) error {
 	return nil
 }
 
+func (t *LTSVTranslator) marshalTryMapToSlice(v any) any {
+	typ := reflect.TypeOf(v)
+	if typ.Kind() != reflect.Map {
+		return v
+	}
+	return []any{v}
+}
+
+// Marshal []map[string]any or map[string]any into ltsv.
 func (t *LTSVTranslator) Marshal(v any) ([]byte, error) {
+	v = t.marshalTryMapToSlice(v)
 	typ := reflect.TypeOf(v)
 	if typ.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("%w: not a slice, %v", ErrLTSVTranslation, typ.Kind())
+		return nil, fmt.Errorf("%w: needs []map[string]any or map[string]any, %T, %v", ErrLTSVTranslation, v, typ.Kind())
 	}
 	val := reflect.ValueOf(v)
 
@@ -76,8 +90,8 @@ func (t *LTSVTranslator) Marshal(v any) ([]byte, error) {
 		rowDict, ok := row.Interface().(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf(
-				"%w: row %d, %+v is not proper kind",
-				ErrLTSVTranslation, i, row.Interface())
+				"%w: row %d, %+v but need map[string]any, %T",
+				ErrLTSVTranslation, i, row.Interface(), row.Interface())
 		}
 
 		var (
@@ -92,8 +106,8 @@ func (t *LTSVTranslator) Marshal(v any) ([]byte, error) {
 				elems[j] = fmt.Sprintf("%s%s%v", k, sep, v)
 			default:
 				return nil, fmt.Errorf(
-					"%w: row %d, col %d, value %+v is not proper kind",
-					ErrLTSVTranslation, i, j, v)
+					"%w: row %d, col %d, value %+v is not proper kind, %T",
+					ErrLTSVTranslation, i, j, v, v)
 			}
 			j++
 		}
