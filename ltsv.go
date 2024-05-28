@@ -99,16 +99,12 @@ func (t *LTSVTranslator) Marshal(v any) ([]byte, error) {
 			j     int
 		)
 		for k, v := range rowDict {
-			switch v.(type) {
-			case bool, int, int8, int16, int32, int64,
-				uint, uint8, uint16, uint32, uint64,
-				float32, float64, string:
-				elems[j] = fmt.Sprintf("%s%s%v", k, sep, v)
-			default:
+			if !IsConvertibleToString(v) {
 				return nil, fmt.Errorf(
 					"%w: row %d, col %d, value %+v is not proper kind, %T",
 					ErrLTSVTranslation, i, j, v, v)
 			}
+			elems[j] = fmt.Sprintf("%s%s%v", k, sep, v)
 			j++
 		}
 

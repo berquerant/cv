@@ -86,16 +86,12 @@ func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
 		elems := make([]string, row.Len())
 		for j := 0; j < row.Len(); j++ {
 			x := row.Index(j)
-			switch x.Interface().(type) {
-			case bool, int, int8, int16, int32, int64,
-				uint, uint8, uint16, uint32, uint64,
-				float32, float64, string:
-				elems[j] = fmt.Sprint(x.Interface())
-			default:
+			if !IsConvertibleToString(x.Interface()) {
 				return nil, fmt.Errorf(
 					"%w: row %d, col %d, %+v is not proper kind, %v %T",
 					ErrCSVTranslation, i, j, x, x.Kind(), x.Interface())
 			}
+			elems[j] = fmt.Sprint(x.Interface())
 		}
 		if err := w.Write(elems); err != nil {
 			return nil, errors.Join(ErrCSVTranslation, err)
