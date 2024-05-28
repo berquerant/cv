@@ -12,6 +12,10 @@ type CSVTranslator struct {
 	Delimiter rune
 }
 
+var (
+	_ Translator = &CSVTranslator{}
+)
+
 func NewCSVTranslator(delimiter rune) *CSVTranslator {
 	return &CSVTranslator{
 		Delimiter: delimiter,
@@ -25,7 +29,7 @@ var (
 func (t *CSVTranslator) Unmarshal(data []byte, v any) error {
 	result, ok := v.(*[][]string)
 	if !ok {
-		return fmt.Errorf("%w: need *[][]string", ErrCSVTranslation)
+		return fmt.Errorf("%w: need *[][]string, %T", ErrCSVTranslation, v)
 	}
 
 	buf := bytes.NewBuffer(data)
@@ -40,10 +44,28 @@ func (t *CSVTranslator) Unmarshal(data []byte, v any) error {
 	return nil
 }
 
-func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
+func (t *CSVTranslator) marshalTrySliceToNestedSlice(v any) any {
 	typ := reflect.TypeOf(v)
 	if typ.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("%w: not a slice, %v", ErrCSVTranslation, typ.Kind())
+		return v
+	}
+	val := reflect.ValueOf(v)
+
+	if val.Len() == 0 {
+		return v
+	}
+	if val.Index(0).Kind() != reflect.Slice {
+		return []any{v}
+	}
+	return v
+}
+
+// Marshal [][]any or []any into csv.
+func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
+	v = t.marshalTrySliceToNestedSlice(v)
+	typ := reflect.TypeOf(v)
+	if typ.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("%w: needs [][]any or []any, %T, %v", ErrCSVTranslation, v, typ.Kind())
 	}
 	val := reflect.ValueOf(v)
 
@@ -57,8 +79,8 @@ func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
 		row := val.Index(i)
 		if row.Kind() != reflect.Slice {
 			return nil, fmt.Errorf(
-				"%w: row %d, %+v is not proper kind, %v",
-				ErrCSVTranslation, i, row.Interface(), row.Kind())
+				"%w: row %d, %+v but need slice, %v %T",
+				ErrCSVTranslation, i, row.Interface(), row.Kind(), row.Interface())
 		}
 
 		elems := make([]string, row.Len())
@@ -71,8 +93,8 @@ func (t *CSVTranslator) Marshal(v any) ([]byte, error) {
 				elems[j] = fmt.Sprint(x.Interface())
 			default:
 				return nil, fmt.Errorf(
-					"%w: row %d, col %d, %+v is not proper kind, %v",
-					ErrCSVTranslation, i, j, x, x.Kind())
+					"%w: row %d, col %d, %+v is not proper kind, %v %T",
+					ErrCSVTranslation, i, j, x, x.Kind(), x.Interface())
 			}
 		}
 		if err := w.Write(elems); err != nil {
