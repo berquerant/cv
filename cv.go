@@ -50,11 +50,22 @@ func (c *CV) Unmarshal(data []byte) (any, error) {
 }
 
 func (c *CV) unmarshalAdditional(data []byte) (any, error) {
-	var a [][]string
-	if err := c.translator().Unmarshal(data, &a); err != nil {
-		return nil, err
+	var err error
+	{
+		// csv
+		var a [][]string
+		if err = c.translator().Unmarshal(data, &a); err == nil {
+			return a, nil
+		}
 	}
-	return a, nil
+	{
+		// ltsv
+		var a []map[string]string
+		if err = c.translator().Unmarshal(data, &a); err == nil {
+			return a, nil
+		}
+	}
+	return nil, err
 }
 
 func (c *CV) Marshal(v any) ([]byte, error) {
@@ -66,6 +77,10 @@ type AutoTranslator struct {
 	Dst       Type
 	Delimiter rune
 }
+
+var (
+	_ Translator = &AutoTranslator{}
+)
 
 func NewAutoTranslator(src, dst Type, delimiter rune) *AutoTranslator {
 	return &AutoTranslator{
